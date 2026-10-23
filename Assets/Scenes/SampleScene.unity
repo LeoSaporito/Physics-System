@@ -514,8 +514,9 @@ MonoBehaviour:
   decceleration: 0
   deccelerationTime: 0.5
   maxSpeed: 0.1
+  moveSpeed: 5
   gravity: 0
-  gravityTime: 25
+  gravityTime: 30
   maxFallSpeed: 9.81
   minDistance: 0.1
   distanceToGround: 0
