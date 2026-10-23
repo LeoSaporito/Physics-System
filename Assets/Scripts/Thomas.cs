@@ -3,43 +3,52 @@ using UnityEngine.InputSystem;
 
 public class Thomas : MonoBehaviour
 {
+    #region
     [Header("Player States")]
     public bool isGrounded;
+    public bool isHorizontalDashed;
+    public bool isVerticalDashed;
+    #endregion
 
+    #region
     [Header("Movement")]
+    public Vector2 direction;
     public float acceleration;
     public float accelerationTime;
-
     public float decceleration;
     public float deccelerationTime;
-
     public float maxSpeed;
-
     public float moveSpeed;
+    public int lookDirection = 1;
+    #endregion
 
+    //Gravity
+    #region
     [Header("Gravity")]
     public float gravity;
     public float gravityTime;
     public float maxFallSpeed;
-
     public float minDistance;
     public float distanceToGround;
+    #endregion
 
+    //Jump
+    #region
     [Header("Jump")]
     public float jumpForce;
     public bool jumpOne;
     public bool jumpTwo;
-
     public bool canImpulseDash;
     public float horizontalForce;
     public float verticalForce;
+    #endregion
 
-
+    //Global Variables
+    #region
     [Header("Global Variables")]
     public Vector3 velocity;
     public BoxCollider2D boxCollider;
-
-
+    #endregion
 
     void Start()
     {
@@ -53,7 +62,8 @@ public class Thomas : MonoBehaviour
     void Update()
     {
         Gravity();
-        
+
+        LookInDifferentDirection();
         Movement();
         ImpulseDash();
         Jump();
@@ -63,10 +73,24 @@ public class Thomas : MonoBehaviour
         CollisionDetection();
     }
 
+    private void LookInDifferentDirection()
+    {
+        if (direction.x < 0)
+        {
+            lookDirection = -1;
+        }
+        else if (direction.x > 0)
+        {
+            lookDirection = 1;
+        }
+        transform.localScale = new Vector3(lookDirection, 1f, 1f);
+    }
+
     private void Jump()
     {
         if (Keyboard.current.leftAltKey.wasPressedThisFrame && jumpOne || Keyboard.current.spaceKey.wasPressedThisFrame && jumpOne)
         {
+            isGrounded = false;
             jumpOne = false;
             velocity += jumpForce * Vector3.up;
         }
@@ -82,52 +106,47 @@ public class Thomas : MonoBehaviour
 
         if (canImpulseDash)
         {
-            if (Keyboard.current.rightArrowKey.isPressed && Keyboard.current.leftAltKey.wasPressedThisFrame)
+            if (Keyboard.current.leftAltKey.wasPressedThisFrame)
             {
-                velocity.x += horizontalForce;
+                isHorizontalDashed = true;
 
-                jumpTwo= false;
-                print("recieved");
-            }
-            if (Keyboard.current.leftArrowKey.isPressed && Keyboard.current.leftAltKey.wasPressedThisFrame)
-            {
-                velocity.x -= horizontalForce;
-                
-                jumpTwo= false;
-                print("recieved");
+                velocity.x = horizontalForce * lookDirection;
+
+                jumpTwo = false;
             }
         }
     }
 
     private void Movement()
     {
+        direction.x = 0f;
+
+        if (Keyboard.current.rightArrowKey.isPressed)
+        {
+            direction.x = 1;
+        }
+        if (Keyboard.current.leftArrowKey.isPressed)
+        {
+            direction.x = -1;
+        }
+        if (Keyboard.current.upArrowKey.isPressed)
+        {
+            direction.y = 1;
+        }
+
         //Instant x movement while on the ground
         if (jumpOne)
         {
-            if (Keyboard.current.rightArrowKey.isPressed)
-            {
-                velocity.x = moveSpeed;
-            }
-            if (Keyboard.current.leftArrowKey.isPressed)
-            {
-                velocity.x = -moveSpeed;
-            }
+            velocity.x = moveSpeed * direction.x;
         }
         //Accelerate x movement while in the air
-        else if (!jumpOne)
-        {
-            if (Keyboard.current.rightArrowKey.isPressed)
-            {
-                velocity.x += acceleration;
-            }
-            if (Keyboard.current.leftArrowKey.isPressed)
-            {
-                velocity.x -= acceleration;
-            }
+        else if (!jumpOne || isHorizontalDashed)
+        {            
+            velocity.x += acceleration * direction.x;
         }
 
         //Decelerate while on the ground and no inputs are pressed
-        if (!Keyboard.current.anyKey.isPressed)
+        if (!Keyboard.current.anyKey.isPressed && !isHorizontalDashed)
         {
             /*//Instant stop when on the ground
             velocity.x = 0f;*/
@@ -148,9 +167,13 @@ public class Thomas : MonoBehaviour
         }
 
         //velocity cannot exceed the speed limit
-        if (canImpulseDash)
+        if (!isHorizontalDashed)
         {
             velocity.x = Mathf.Clamp(velocity.x, -moveSpeed, moveSpeed);
+        }
+        else
+        {
+            velocity.x = Mathf.Clamp(velocity.x, -horizontalForce, horizontalForce);
         }
     }
 
@@ -158,10 +181,8 @@ public class Thomas : MonoBehaviour
     {
         velocity.y -= gravity;
     }
-
-    private void CollisionDetection()       
+    private void CollisionDetection()
     {
-
         Vector3 feetPosition = new Vector3(transform.position.x, transform.position.y - (boxCollider.size.y / 2), 0);
         RaycastHit2D hit = Physics2D.Raycast(feetPosition, Vector2.down);
 
@@ -171,7 +192,6 @@ public class Thomas : MonoBehaviour
             BoxCollider2D groundBoxCollider = groundObj.GetComponent<BoxCollider2D>();
             float topOfBox = groundBoxCollider.bounds.max.y;
             
-
             //Debug
             /*
             print("Box collider size: " + boxCollider.size.y / 2);
@@ -192,13 +212,20 @@ public class Thomas : MonoBehaviour
             distanceToGround = Vector2.Distance(feetPosition, new Vector2(transform.position.x, topOfBox));
             if (distanceToGround <= minDistance)
             {
-                jumpOne = true;
-                jumpTwo = true;
-
-                velocity.y = 0f;
+                Grounded();
 
                 transform.position = new Vector3(transform.position.x, topOfBox + (boxCollider.size.y / 2) + minDistance, 0);
             }
         }
+    }
+    private void Grounded()
+    {
+        jumpOne = true;
+        jumpTwo = true;
+
+        isGrounded = true;
+        isHorizontalDashed = false;
+        
+        velocity.y = 0f;
     }
 }
