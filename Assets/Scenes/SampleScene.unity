@@ -512,17 +512,19 @@ MonoBehaviour:
   acceleration: 0
   accelerationTime: 0.25
   decceleration: 0
-  deccelerationTime: 0.5
+  deccelerationTime: 0.25
   maxSpeed: 0.1
-  moveSpeed: 5
+  moveSpeed: 8
   gravity: 0
   gravityTime: 30
   maxFallSpeed: 9.81
   minDistance: 0.1
   distanceToGround: 0
   jumpForce: 20
-  jumpOne: 0
+  isGrounded: 0
   jumpTwo: 0
+  horizontalForce: 10
+  verticalForce: 0
   velocity: {x: 0, y: 0, z: 0}
   boxCollider: {fileID: 1667196639}
 --- !u!212 &1667196637
